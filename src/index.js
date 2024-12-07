@@ -48,6 +48,8 @@ function workLoop(deadline) {
   requestIdleCallback(workLoop)
 }
 
+
+// ブラウザーがアイドル状態の時に実行される関数をキューに登録 https://developer.mozilla.org/ja/docs/Web/API/Window/requestIdleCallback
 requestIdleCallback(workLoop)
 
 function performUnitOfWork(fiber) {
