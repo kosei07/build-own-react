@@ -8,30 +8,20 @@ function createElement(type, props, ...children) {
   }
 }
 
-function createTextElement(text) {
-  return {
-    type: "TEXT_ELEMENT",
-    props: {
-      nodeValue: text,
-      children: [],
-    },
-  }
-}
-
 function createDom(fiber) {
-  const dom = element.type === "TEXT_ELEMENT" ? document.createTextNode("") : document.createElement(element.type)
+  const dom =
+    fiber.type == "TEXT_ELEMENT"
+      ? document.createTextNode("")
+      : document.createElement(fiber.type)
 
-  const isProperty = (key) => key !== "children"
-
-  Object.keys(element.props)
+  const isProperty = key => key !== "children"
+  Object.keys(fiber.props)
     .filter(isProperty)
-    .forEach((name) => {
-      dom[name] = element.props[name]
+    .forEach(name => {
+      dom[name] = fiber.props[name]
     })
 
-  element.props.children.forEach((child) => render(child, dom))
-
-  container.appendChild(dom)
+  return dom
 }
 
 function render(element, container) {
