@@ -85,6 +85,8 @@ let nextUnitOfWork = null
 let wipRoot = null
 let currentRoot = null // 直前にコミットしたFiberツリーの参照
 let deletions = null  // 削除対象の古いFiberの配列
+let wipFiber = null
+let hookIndex = null
 
 function commitRoot() {
   commitWork(wipRoot.child)
@@ -175,8 +177,39 @@ function performUnitOfWork(fiber) {
 }
 
 function updateFunctionComponent(fiber) {
+  wipFiber = fiber
+  hookIndex = 0
+  wipFiber.hooks = []
   const children = [fiber.type(fiber.props)]
   reconcileChildren(fiber, children)
+}
+
+function useState(initial) {
+  const oldHook = wipFiber.alternate && wipFiber.alternate.hooks && wipFiber.alternate.hooks[hookIndex]
+  const hook = {
+    state: oldHook ? oldHook.state : initial,
+    queue: [],
+  }
+
+  const actions = oldHook ? oldHook.queue : [];
+  actions.forEach((action) => {
+    hook.state = action(hook.state);
+  });
+
+  const setState = action => {
+    hook.queue.push(action)
+    wipRoot = {
+      dom: currentRoot.dom,
+      props: currentRoot.props,
+      alternate: currentRoot,
+    }
+    nextUnitOfWork = wipRoot
+    deletions = []
+  }
+
+  wipFiber.hooks.push(hook)
+  hookIndex++
+  return [hook.state, setState]
 }
 
 function updateHostComponent(fiber) {
@@ -244,13 +277,20 @@ function reconcileChildren(wipFiber, elements) {
 
 const Didact = {
   createElement,
-  render
+  render,
+  useState,
 }
 
 /** @jsx Didact.createElement */
-function App(props) {
-  return <h1>Hi {props.name}</h1>
+function Counter() {
+  const [state, setState] = Didact.useState(1)
+  return (
+    <h1 onClick={() => setState(c => c + 1)}>
+      Count: {state}
+    </h1>
+  )
 }
+
 
 const element = <App name="foo" />
 const container = document.getElementById("root")
