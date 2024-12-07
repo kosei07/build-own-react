@@ -25,15 +25,35 @@ function createDom(fiber) {
 }
 
 function render(element, container) {
-  nextUnitOfWork = {
+  wipRoot = {
     dom: container,
     props: {
       children: [element]
     }
   }
+
+  nextUnitOfWork = wipRoot
 }
 
 let nextUnitOfWork = null
+let wipRoot = null
+
+function commitRoot() {
+  commitWork(wipRoot.child)
+  wipRoot = null
+}
+
+function commitWork(fiber) {
+  if (!fiber) {
+    return
+  }
+  const domParent = fiber.parent.dom
+  domParent.appendChild(fiber.dom)
+
+  // 再起的にコミット
+  commitWork(fiber.child)
+  commitWork(fiber.sibling)
+}
 
 function workLoop(deadline) {
   let shouldYield = false
@@ -43,6 +63,11 @@ function workLoop(deadline) {
     )
 
     shouldYield = deadline.timeRemaining() < 1
+  }
+
+  // 次の作業単位がnullになる(作業が終了したら)、ファイバーツリーをDOMにコミット
+  if (!nextUnitOfWork && wipRoot) {
+    commitRoot()
   }
 
   requestIdleCallback(workLoop)
